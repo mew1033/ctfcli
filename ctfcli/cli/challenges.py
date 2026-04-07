@@ -750,7 +750,7 @@ class ChallengeCommand:
 
                 click.secho(
                     f"Deploying challenge service '{challenge_name}' "
-                    f"({challenge_instance.challenge_file_path.relative_to(config.project_path)}) "
+                    f"({challenge_instance.challenge_file_path}) "
                     f"with {deployment_handler.__class__.__name__} ...",
                     fg="blue",
                 )
