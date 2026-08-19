@@ -260,7 +260,26 @@ class ScheduledAtProperty(Property):
 
         # parse validates the timezone is explicit and raises otherwise
         parsed = self.parse(ctx.challenge.get("scheduled_at"), ctx.challenge.challenge_file_path)
-        return {"scheduled_at": parsed.isoformat() if parsed else None}
+
+        # Omit the key when there's nothing to schedule. CTFd passes the payload
+        # straight to the challenge model, so instances that predate scheduled_at
+        # (or challenge type plugins that do) fail with a 500 on an unknown key
+        if parsed is None:
+            return {}
+
+        return {"scheduled_at": parsed.isoformat()}
+
+    def sync_payload(self, ctx: PropertyContext) -> dict:
+        payload = self.create_payload(ctx)
+        if payload or self.ignored(ctx):
+            return payload
+
+        # Clearing a schedule requires an explicit null, which is only safe to send
+        # to a remote that reports the field, and therefore knows it
+        if ctx.remote_challenge is not None and "scheduled_at" in ctx.remote_challenge:
+            return {"scheduled_at": None}
+
+        return {}
 
     def pull(self, ctx: PropertyContext, remote_data: dict):
         return self.normalize(remote_data.get("scheduled_at"))
